@@ -14,6 +14,7 @@ public class PrimeNumbers {
 		}
 	}
 
+	@SuppressWarnings("unused")
 	private static void printNPrimes2(int n) {
 		int primeCount = 0;
 		int[] primes = new int[n];
@@ -84,6 +85,7 @@ public class PrimeNumbers {
 		return true;
 	}
 
+	@SuppressWarnings("unused")
 	private static void printNPrimes4(int n) {
 		int count = 0;
 		for (int number = 2; count < n; number++) {
