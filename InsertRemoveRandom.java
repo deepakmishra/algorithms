@@ -25,7 +25,7 @@ import java.util.Set;
  * takes expected O(1) time. Space is O(n), including duplicate occurrences.
  * Instances are not thread-safe.
  */
-public class RandomizedMultiset {
+public class InsertRemoveRandom {
 	private final List<Integer> values = new ArrayList<>();
 	private final Map<Integer, Set<Integer>> indices = new HashMap<>();
 	private final Random generator = new Random();
@@ -74,7 +74,7 @@ public class RandomizedMultiset {
 	 * deviation binomial tolerance plus one sample for rounding.
 	 */
 	public static void main(String[] args) {
-		RandomizedMultiset numbers = new RandomizedMultiset();
+		InsertRemoveRandom numbers = new InsertRemoveRandom();
 		Random inputGenerator = new Random(42);
 		numbers.generator.setSeed(12345);
 		Map<Integer, Integer> counts = new HashMap<>();
@@ -105,7 +105,7 @@ public class RandomizedMultiset {
 		verifyProbabilities(numbers, counts, 10000, "After 200 removals");
 	}
 
-	private static void verifyProbabilities(RandomizedMultiset numbers,
+	private static void verifyProbabilities(InsertRemoveRandom numbers,
 			Map<Integer, Integer> counts, int sampleCount, String phase) {
 		int total = counts.values().stream().mapToInt(Integer::intValue).sum();
 		if (total == 0 || sampleCount <= 0) {
