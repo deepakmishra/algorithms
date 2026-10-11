@@ -1,47 +1,54 @@
-import java.math.BigInteger;
-
 /**
- * Problem: Count full binary trees using a fixed set of n unique node labels.
- * Every node has either zero or two children. Left and right child positions
- * are distinct, and assigning labels differently produces different trees.
- * This is not a binary-search-tree problem.
+ * Problem: Count possible full binary tree shapes for a given node count.
+ * Every node has either zero or two children.
+ * Left and right child positions are distinct.
+ * Different assignments of node labels are not counted.
  *
- * Solution: A full tree has n = 2k + 1 nodes. There are Catalan(k) ordered
- * shapes and n! assignments of the unique labels, so the answer is
- * Catalan(k) * n!. Positive even n and zero return zero; negative n is invalid.
- * Examples: n=1 -> 1, n=3 -> 6, n=5 -> 240.
+ * Examples: 1 -> 1, 3 -> 1, 5 -> 2, 7 -> 5.
  *
- * BigInteger prevents numeric overflow. The algorithm uses O(n) arithmetic
- * operations and a constant number of BigInteger variables; actual time and
- * memory grow with the size of the numbers.
+ * Solution: Dynamic programming.
+ * dp[i] += dp[j] * dp[i - 1 - j] for each odd left-subtree size j.
+ * The root consumes one node.
+ *
+ * Time: O(n^2). Space: O(n).
+ * Throws ArithmeticException if the result exceeds long's range.
  */
 public class FullBinaryTreeCount {
-	public static BigInteger count(int nodeCount) {
-		if (nodeCount < 0) {
-			throw new IllegalArgumentException("Node count cannot be negative");
-		}
-		if (nodeCount == 0 || nodeCount % 2 == 0) {
-			return BigInteger.ZERO;
-		}
 
-		int internalNodes = (nodeCount - 1) / 2;
-		BigInteger catalan = BigInteger.ONE;
-		// C(i+1) = C(i) * 2 * (2i+1) / (i+2).
-		for (int i = 0; i < internalNodes; i++) {
-			catalan = catalan.multiply(BigInteger.valueOf(2L * (2L * i + 1)))
-					.divide(BigInteger.valueOf((long) i + 2));
-		}
+    public static long count(int nodeCount) {
+        if (nodeCount < 0) {
+            throw new IllegalArgumentException("Node count cannot be negative");
+        }
 
-		BigInteger factorial = BigInteger.ONE;
-		for (long i = 2; i <= nodeCount; i++) {
-			factorial = factorial.multiply(BigInteger.valueOf(i));
-		}
-		return catalan.multiply(factorial);
-	}
+        if (nodeCount % 2 == 0) {
+            return 0;
+        }
 
-	public static void main(String[] args) {
-		for (int n = 1; n <= 7; n += 2) {
-			System.out.println(n + " nodes: " + count(n));
-		}
-	}
+        if (nodeCount == 1 || nodeCount == 3) {
+            return 1;
+        }
+
+        // For odd node counts above 71, the result exceeds long's range.
+        if (nodeCount > 71) {
+            throw new ArithmeticException("Tree count exceeds long range");
+        }
+
+        long[] dp = new long[nodeCount + 1];
+        dp[1] = 1;
+        dp[3] = 1;
+
+        for (int i = 5; i <= nodeCount; i += 2) {
+            for (int j = 1; j < i - 1; j += 2) {
+                dp[i] += dp[j] * dp[i - 1 - j];
+            }
+        }
+
+        return dp[nodeCount];
+    }
+
+    public static void main(String[] args) {
+        for (int n = 0; n <= 11; n++) {
+            System.out.println(n + " nodes: " + count(n));
+        }
+    }
 }
