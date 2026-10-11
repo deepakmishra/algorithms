@@ -67,12 +67,82 @@ public class RandomizedMultiset {
 		return values.get(generator.nextInt(values.size()));
 	}
 
+	/**
+	 * Demonstrates empirical probabilities before and after removing occurrences.
+	 * Fixed seeds make the example reproducible. Sampling is a statistical
+	 * sanity check, not a proof: results are compared with a six-standard-
+	 * deviation binomial tolerance plus one sample for rounding.
+	 */
 	public static void main(String[] args) {
 		RandomizedMultiset numbers = new RandomizedMultiset();
-		numbers.insert(2);
-		numbers.insert(3);
-		numbers.insert(4);
-		numbers.insert(2);
-		System.out.println(numbers.random()); // 2: 50%, 3: 25%, 4: 25%
+		Random inputGenerator = new Random(42);
+		numbers.generator.setSeed(12345);
+		Map<Integer, Integer> counts = new HashMap<>();
+
+		for (int i = 0; i < 1000; i++) {
+			int number = inputGenerator.nextInt(100) + 1;
+			numbers.insert(number);
+			counts.merge(number, 1, Integer::sum);
+		}
+		verifyProbabilities(numbers, counts, 10000, "After 1000 insertions");
+
+		// Remove 200 randomly chosen existing occurrences, updating the reference
+		// map independently. Rejection sampling skips numbers no longer present.
+		for (int i = 0; i < 200; i++) {
+			int number;
+			do {
+				number = inputGenerator.nextInt(100) + 1;
+			} while (!counts.containsKey(number));
+
+			numbers.remove(number);
+			int remaining = counts.get(number) - 1;
+			if (remaining == 0) {
+				counts.remove(number);
+			} else {
+				counts.put(number, remaining);
+			}
+		}
+		verifyProbabilities(numbers, counts, 10000, "After 200 removals");
+	}
+
+	private static void verifyProbabilities(RandomizedMultiset numbers,
+			Map<Integer, Integer> counts, int sampleCount, String phase) {
+		int total = counts.values().stream().mapToInt(Integer::intValue).sum();
+		if (total == 0 || sampleCount <= 0) {
+			throw new IllegalArgumentException("Positive population and sample sizes required");
+		}
+		if (numbers.values.size() != total) {
+			throw new AssertionError("Stored occurrence count differs from reference map");
+		}
+
+		Map<Integer, Integer> observedCounts = new HashMap<>();
+		for (int i = 0; i < sampleCount; i++) {
+			int number = numbers.random();
+			if (!counts.containsKey(number)) {
+				throw new AssertionError("Sampled an absent number: " + number);
+			}
+			observedCounts.merge(number, 1, Integer::sum);
+		}
+
+		System.out.println("\n" + phase + ": " + total + " occurrences");
+		System.out.println("Number | Count | Expected % | Observed % | Result");
+		boolean passed = true;
+		for (int number = 1; number <= 100; number++) {
+			int count = counts.getOrDefault(number, 0);
+			int observed = observedCounts.getOrDefault(number, 0);
+			double probability = (double) count / total;
+			double expectedSamples = sampleCount * probability;
+			double standardDeviation = Math.sqrt(sampleCount * probability * (1 - probability));
+			boolean withinTolerance = Math.abs(observed - expectedSamples)
+					<= 6 * standardDeviation + 1;
+			passed &= withinTolerance;
+			System.out.printf(java.util.Locale.ROOT, "%6d | %5d | %10.2f | %10.2f | %s%n",
+					number, count, probability * 100,
+					100.0 * observed / sampleCount, withinTolerance ? "PASS" : "FAIL");
+		}
+		if (!passed) {
+			throw new AssertionError(phase + ": probability check failed");
+		}
+		System.out.println("PASS: all probabilities are within the sampling tolerance.");
 	}
 }
